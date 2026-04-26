@@ -22,13 +22,16 @@ jobs:
         run: ./mvnw clean package -DskipTests
 
       - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker Image
-        run: docker build -t abdouaziz22/spring-boot-deploymentci:latest .
+        run: docker build -t ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest .
 
       - name: Push Image to Docker Hub
-        run: docker push abdouaziz22/spring-boot-deploymentci:latest
+        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
 
       - name: SSH and Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -37,11 +40,11 @@ jobs:
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker stop spring-deploymentci || true
-            docker rm spring-deploymentci || true
-            docker rmi abdouaziz22/spring-boot-deploymentci:latest || true
-            docker pull abdouaziz22/spring-boot-deploymentci:latest
+            docker stop ${{ vars.CONTAINER_NAME }} || true
+            docker rm ${{ vars.CONTAINER_NAME }} || true
+            docker rmi ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest || true
+            docker pull ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
             docker run -d \
-              --name spring-deploymentci \
-              -p 8080:8080 \
-              abdouaziz22/spring-boot-deploymentci:latest
+              --name ${{ vars.CONTAINER_NAME }} \
+              -p ${{ vars.APP_PORT }}:${{ vars.APP_PORT }} \
+              ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
