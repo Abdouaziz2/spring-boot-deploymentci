@@ -30,10 +30,10 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker Image
-        run: docker build -t ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest .
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-deploymentci:latest .
 
       - name: Push Image to Docker Hub
-        run: docker push ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
+        run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/spring-boot-deploymentci:latest
 
       - name: SSH and Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -43,10 +43,10 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker stop ${{ secrets.CONTAINER_NAME }} || true
-            docker rm ${{secrets.CONTAINER_NAME }} || true
+            docker rm ${{ secrets.CONTAINER_NAME }} || true
             docker rmi ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.IMAGE_NAME }}:latest || true
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.IMAGE_NAME }}:latest
             docker run -d \
-              --name ${{ vars.CONTAINER_NAME }} \
-              -p ${{ vars.APP_PORT }}:${{ vars.APP_PORT }} \
-              ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.IMAGE_NAME }}:latest
+              --name ${{ secrets.CONTAINER_NAME }} \
+              -p ${{ secrets.APP_PORT }}:${{ secrets.APP_PORT }} \
+              ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.IMAGE_NAME }}:latest
